@@ -1,0 +1,94 @@
+/* General Page Styling */
+.portal-login-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background-color: #f0f0f0;
+    padding: 0 20px;
+  }
+  
+  .portal-login-box {
+    background-color: #ffffff;
+    padding: 40px;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    width: 100%;
+    max-width: 450px;
+  }
+  
+  .portal-login-box h2 {
+    font-size: 24px;
+    text-align: center;
+    font-weight: bold;
+    margin-bottom: 30px;
+    color: #333;
+  }
+  
+  /* Input Fields */
+  .portal-login-box .MuiTextField-root {
+    margin-bottom: 20px;
+  }
+  
+  .portal-login-box .MuiTextField-root label {
+    font-weight: bold;
+  }
+  
+  .portal-login-box .MuiTextField-root input {
+    font-size: 16px;
+    padding: 12px;
+  }
+  
+  /* Button Styling */
+  .portal-login-box button {
+    width: 100%;
+    padding: 12px;
+    font-size: 16px;
+    font-weight: bold;
+    border-radius: 6px;
+    transition: all 0.3s ease;
+  }
+  
+  .portal-login-box button:hover {
+    background-color: #1976d2;
+    color: #fff;
+    border: none;
+  }
+  
+  .portal-login-box button:active {
+    background-color: #1565c0;
+  }
+  
+  /* Link Styling */
+  .portal-login-box .links {
+    text-align: center;
+    margin-top: 20px;
+  }
+  
+  .portal-login-box .links a {
+    text-decoration: none;
+    color: #1976d2;
+    font-weight: bold;
+    font-size: 14px;
+  }
+  
+  .portal-login-box .links a:hover {
+    text-decoration: underline;
+  }
+  
+  /* Responsive Styling */
+  @media (max-width: 768px) {
+    .portal-login-box {
+      padding: 25px;
+    }
+  
+    .portal-login-box h2 {
+      font-size: 20px;
+    }
+  
+    .portal-login-box button {
+      font-size: 14px;
+      padding: 10px;
+    }
+  }
+  

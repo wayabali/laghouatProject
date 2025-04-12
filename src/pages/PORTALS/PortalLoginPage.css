@@ -1,0 +1,26 @@
+.portal-login-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  background-color: #e3f2fd;
+}
+
+.portal-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.portal-buttons button {
+  background-color: #1976d2; /* Blue color for the button */
+  color: white;
+  font-size: 16px;
+  padding: 15px;
+  border-radius: 8px;
+  text-transform: none;
+}
+
+.portal-buttons button:hover {
+  background-color: #1565c0; /* Darker blue when hovering */
+}
