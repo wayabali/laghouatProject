@@ -176,9 +176,9 @@ const AdminDashboardPage = () => {
                 label="Choose Department"
                 onChange={handleDepartmentChange}
               >
-                <MenuItem value="Software Engineering">Software Engineering</MenuItem>
-                <MenuItem value="Marketing">Marketing</MenuItem>
-                <MenuItem value="Research">Research</MenuItem>
+                <MenuItem value="Incubator1">Software Engineering</MenuItem>
+                <MenuItem value="Incubator2">Marketing</MenuItem>
+                <MenuItem value="Incubator3">Research</MenuItem>
               </Select>
             </FormControl>
 
