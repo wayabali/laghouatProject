@@ -18,18 +18,34 @@ const AdminDashboardPage = () => {
   // Fetch projects when component mounts
   useEffect(() => {
     const fetchProjects = async () => {
+      const token = localStorage.getItem('accessToken');  // Retrieve token
+      if (!token) {
+        alert("Authentication required. Please log in.");
+        return;
+      }
+
       try {
-        const response = await fetch("https://project-management-app-bvjs.onrender.com/accounts/admin/projects/");
+        const response = await fetch("https://project-management-app-bvjs.onrender.com/accounts/admin/projects/", {
+          headers: {
+            'Authorization': `Bearer ${token}`,  // Include token in request headers
+            'Content-Type': 'application/json',
+          },
+        });
         const data = await response.json();
-        setProjects(data);
+        if (Array.isArray(data)) {
+          setProjects(data);
+        } else {
+          console.error("Unexpected API response structure:", data);
+          alert("Failed to fetch projects. Please check the API response structure.");
+        }
       } catch (error) {
         console.error("Error fetching projects:", error);
-        alert("Failed to fetch projects");
+        alert("Failed to fetch projects.");
       }
     };
-
+  
     fetchProjects();
-  }, []);
+  }, []); // Empty dependency array to run on component mount
 
   const handleOpenModal = (project) => {
     setSelectedProject(project);
@@ -46,14 +62,20 @@ const AdminDashboardPage = () => {
 
   const handleReviewProject = async (action) => {
     if (selectedProject) {
+      const token = localStorage.getItem('accessToken');  // Retrieve token
+      if (!token) {
+        alert("Authentication required. Please log in.");
+        return;
+      }
+
       try {
         const response = await fetch(`https://project-management-app-bvjs.onrender.com/accounts/admin/projects/${selectedProject.id}/review_project/`, {
-          method: 'GET',
+          method: 'POST',  // Use POST method to change project state
           headers: {
+            'Authorization': `Bearer ${token}`,  // Include token in request headers
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
           },
-          body: JSON.stringify({ action }),
+          body: JSON.stringify({ action }),  // Send action (accept, reject, etc.)
         });
 
         const data = await response.json();
@@ -115,7 +137,7 @@ const AdminDashboardPage = () => {
 
   return (
     <div>
-      <ResponsiveAppBar  />
+      <ResponsiveAppBar />
       <Container maxWidth="lg" sx={{ mt: 4 }}>
         <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 4 }}>
           Admin Dashboard
@@ -124,13 +146,13 @@ const AdminDashboardPage = () => {
         {/* Table to display projects */}
         <TableContainer component={Paper} sx={{ mb: 3 }}>
           <Table>
-            <TableHead >
-              <TableRow >
-                <TableCell style={{fontWeight: 'bold'}} >ID</TableCell>
-                <TableCell style={{fontWeight: 'bold'}}>Name</TableCell>
-                <TableCell style={{fontWeight: 'bold'}}>Status</TableCell>
-                <TableCell style={{fontWeight: 'bold'}}>Date of Submission</TableCell>
-                <TableCell style={{fontWeight: 'bold'}}>Actions</TableCell>
+            <TableHead>
+              <TableRow>
+                <TableCell style={{ fontWeight: 'bold' }}>ID</TableCell>
+                <TableCell style={{ fontWeight: 'bold' }}>Name</TableCell>
+                <TableCell style={{ fontWeight: 'bold' }}>Status</TableCell>
+                <TableCell style={{ fontWeight: 'bold' }}>Date of Submission</TableCell>
+                <TableCell style={{ fontWeight: 'bold' }}>Actions</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -144,7 +166,7 @@ const AdminDashboardPage = () => {
                   <TableCell>{new Date(project.created_at).toLocaleDateString()}</TableCell>
                   <TableCell>
                     <Button onClick={() => handleOpenModal(project)} variant="outlined" color="black">
-                    <FaArrowUpRightFromSquare style={{ fontSize: '1rem' }} />
+                      <FaArrowUpRightFromSquare style={{ fontSize: '1rem' }} />
                     </Button>
                   </TableCell>
                 </TableRow>
@@ -153,12 +175,12 @@ const AdminDashboardPage = () => {
           </Table>
         </TableContainer>
 
-        <Box sx={{ mt: 3, display: 'flex', justifyContent: 'right' , gap: 2 }}>
+        <Box sx={{ mt: 3, display: 'flex', justifyContent: 'right', gap: 2 }}>
           <Button sx={{ backgroundColor: 'red', color: 'white' }} variant="contained" onClick={handleExportPDF}>
-          <FaRegFilePdf style={{ fontSize: '1.2rem' }} />
+            <FaRegFilePdf style={{ fontSize: '1.2rem' }} />
           </Button>
           <Button sx={{ backgroundColor: 'green', color: 'white', width: 'auto' }} variant="contained" onClick={handleExportExcel}>
-          <RiFileExcel2Line style={{ fontSize: '1.2rem' }} />
+            <RiFileExcel2Line style={{ fontSize: '1.2rem' }} />
           </Button>
         </Box>
 
@@ -172,17 +194,20 @@ const AdminDashboardPage = () => {
             <Typography variant="body1"><strong>Team:</strong> {selectedProject?.members.map(member => member.first_name).join(', ')}</Typography>
 
             <Box sx={{ mt: 2 }}>
-              <Button variant="contained" color="primary" onClick={() => handleReviewProject('accept')} sx={{ mr: 2 }}>
-                Accept
-              </Button>
-              <Button variant="contained" color="secondary" onClick={() => handleReviewProject('reject')}>
-                Reject
-              </Button>
-              <Button variant="contained" color="default" onClick={() => handleReviewProject('cti')} sx={{ mr: 2 }}>
-                CTI
-              </Button>
-              <Button variant="contained" color="default" onClick={() => handleReviewProject('cde')}>
-                CDE
+              <FormControl fullWidth sx={{ mb: 2 }}>
+                <InputLabel id="department-select-label">Select Action</InputLabel>
+                <Select
+                  labelId="department-select-label"
+                  value={selectedDepartment}
+                  onChange={handleDepartmentChange}
+                >
+                  <MenuItem value="send_cti">send_cti</MenuItem>
+                  <MenuItem value="send_cde">send_cde</MenuItem>
+                  <MenuItem value="send_di">send_di</MenuItem>
+                </Select>
+              </FormControl>
+              <Button variant="contained" color="primary" onClick={() => handleReviewProject(selectedDepartment)} sx={{ mr: 2 }}>
+                Submit
               </Button>
             </Box>
 
