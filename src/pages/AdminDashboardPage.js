@@ -1,26 +1,35 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button, Typography, Container, Box, Modal, MenuItem, Select, FormControl, InputLabel, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper } from '@mui/material';
 import { useNavigate } from 'react-router-dom'; 
 import { jsPDF } from 'jspdf'; 
 import * as XLSX from 'xlsx'; 
-import './AdminDashboardPage.css'
-import ResponsiveAppBar from '../Components/navigationBar'; // Assuming you have a TopBar component
-import { FaRegFilePdf , FaArrowUpRightFromSquare  } from "react-icons/fa6";
+import './AdminDashboardPage.css';
+import ResponsiveAppBar from '../Components/navigationBar'; 
+import { FaRegFilePdf, FaArrowUpRightFromSquare } from "react-icons/fa6";
 import { RiFileExcel2Line } from "react-icons/ri";
-
-
 
 const AdminDashboardPage = () => {
   const navigate = useNavigate();
   const [openModal, setOpenModal] = useState(false);
   const [selectedProject, setSelectedProject] = useState(null);
-  const [projects, setProjects] = useState([
-    { id: 1, name: "Cosmetics Idea", status: "Pending", description: "Project related to Cosmetics", team: ["John Doe", "Jane Doe"], documents: null, department: "CDE", dateSubmitted: "2025-04-10" },
-    { id: 2, name: "E-Learning Plateform", status: "Pending", description: "Mixing Learning with Internet", team: ["Alice", "Bob"], documents: "link_to_document", department: "BI", dateSubmitted: "2025-04-12" },
-    { id: 3, name: "Tech Startup", status: "Approved", description: "A new tech startup project", team: ["Emma", "Zoe"], documents: null, department: "CDE", dateSubmitted: "2025-04-14" },
-  ]);
-
+  const [projects, setProjects] = useState([]);
   const [selectedDepartment, setSelectedDepartment] = useState('');
+
+  // Fetch projects when component mounts
+  useEffect(() => {
+    const fetchProjects = async () => {
+      try {
+        const response = await fetch("https://project-management-app-bvjs.onrender.com/accounts/admin/projects/");
+        const data = await response.json();
+        setProjects(data);
+      } catch (error) {
+        console.error("Error fetching projects:", error);
+        alert("Failed to fetch projects");
+      }
+    };
+
+    fetchProjects();
+  }, []);
 
   const handleOpenModal = (project) => {
     setSelectedProject(project);
@@ -35,16 +44,36 @@ const AdminDashboardPage = () => {
     setSelectedDepartment(event.target.value);
   };
 
-  const handleApproveProject = () => {
-    if (selectedDepartment) {
-      const updatedProjects = projects.map((project) =>
-        project.id === selectedProject.id ? { ...project, status: `Approved for ${selectedDepartment}`, department: selectedDepartment } : project
-      );
-      setProjects(updatedProjects);
-      alert(`Project approved for ${selectedDepartment} department.`);
+  const handleReviewProject = async (action) => {
+    if (selectedProject) {
+      try {
+        const response = await fetch(`https://project-management-app-bvjs.onrender.com/accounts/admin/projects/${selectedProject.id}/review_project/`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ action }),
+        });
+
+        const data = await response.json();
+        if (response.ok) {
+          // Update project state based on the action taken
+          const updatedProjects = projects.map((project) =>
+            project.id === selectedProject.id ? { ...project, state: action } : project
+          );
+          setProjects(updatedProjects);
+          alert(`Project ${action === "accept" ? "accepted" : action === "reject" ? "rejected" : action}`);
+        } else {
+          alert(data.detail || "Failed to change project state.");
+        }
+      } catch (error) {
+        console.error("Error during project review:", error);
+        alert("An error occurred while reviewing the project.");
+      }
+
       handleCloseModal();
     } else {
-      alert("Please select a department.");
+      alert("No project selected.");
     }
   };
 
@@ -58,10 +87,10 @@ const AdminDashboardPage = () => {
 
     projects.forEach(project => {
       doc.text(`Project: ${project.name}`, 14, y);
-      doc.text(`Status: ${project.status}`, 14, y + 6);
+      doc.text(`Status: ${project.state}`, 14, y + 6);
       doc.text(`Department: ${project.department || 'Not Assigned'}`, 14, y + 12);
       doc.text(`Description: ${project.description}`, 14, y + 18);
-      doc.text(`Members: ${project.team.join(', ')}`, 14, y + 24);
+      doc.text(`Members: ${project.members.map(member => member.first_name).join(', ')}`, 14, y + 24);
       y += 30;
     });
 
@@ -76,33 +105,16 @@ const AdminDashboardPage = () => {
     XLSX.writeFile(wb, "projects-list.xlsx");
   };
 
-  
-
-  const handleRejectProject = () => {
-    if (selectedProject) {
-      const updatedProjects = projects.map((project) =>
-        project.id === selectedProject.id ? { ...project, status: "Rejected" } : project
-      );
-      setProjects(updatedProjects);
-      alert(`Project "${selectedProject.name}" has been rejected.`);
-      handleCloseModal();
-    } else {
-      alert("No project selected to reject.");
-    }
-  };
-
-  // Function to get status color based on project status
   const getStatusColor = (status) => {
-    if (status === 'Approved') return 'green';
+    if (status === 'accepted') return 'green';
     if (status === 'Rejected') return 'red';
-    if (status === 'Pending') return 'orange';
-    return 'black'; // Default color if no status matches
+    if (status === 'under_review') return 'orange';
+    return 'black';
   };
 
   return (
-
-<div>
-  <ResponsiveAppBar  /> {/* Assuming you have a TopBar component */}
+    <div>
+      <ResponsiveAppBar  />
       <Container maxWidth="lg" sx={{ mt: 4 }}>
         <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 4 }}>
           Admin Dashboard
@@ -125,11 +137,10 @@ const AdminDashboardPage = () => {
                 <TableRow key={project.id}>
                   <TableCell>{project.id}</TableCell>
                   <TableCell>{project.name}</TableCell>
-                  {/* Displaying status with color based on status */}
-                  <TableCell style={{ color: getStatusColor(project.status), fontWeight: 'bold' }}>
-                    {project.status}
+                  <TableCell style={{ color: getStatusColor(project.state), fontWeight: 'bold' }}>
+                    {project.state}
                   </TableCell>
-                  <TableCell>{project.dateSubmitted}</TableCell>
+                  <TableCell>{new Date(project.created_at).toLocaleDateString()}</TableCell>
                   <TableCell>
                     <Button onClick={() => handleOpenModal(project)} variant="outlined" color="black">
                     <FaArrowUpRightFromSquare style={{ fontSize: '1rem' }} />
@@ -157,29 +168,20 @@ const AdminDashboardPage = () => {
             </Typography>
 
             <Typography variant="body1"><strong>Description:</strong> {selectedProject?.description}</Typography>
-            <Typography variant="body1"><strong>Team:</strong> {selectedProject?.team.join(', ')}</Typography>
-            <Typography variant="body1"><strong>Documents:</strong> {selectedProject?.documents ? <a href={selectedProject?.documents} target="_blank" rel="noopener noreferrer">View Document</a> : 'None'}</Typography>
+            <Typography variant="body1"><strong>Team:</strong> {selectedProject?.members.map(member => member.first_name).join(', ')}</Typography>
 
-            <FormControl fullWidth sx={{ mt: 2 }}>
-              <InputLabel id="department-label">Choose Department</InputLabel>
-              <Select
-                labelId="department-label"
-                value={selectedDepartment}
-                label="Choose Department"
-                onChange={handleDepartmentChange}
-              >
-                <MenuItem value="Incubator1">Incubator1</MenuItem>
-                <MenuItem value="Incubator2">Incubator2</MenuItem>
-                <MenuItem value="Incubator3">Incubator3</MenuItem>
-              </Select>
-            </FormControl>
-
-            <Box sx={{ mt: 3 }}>
-              <Button variant="contained" color="primary" onClick={handleApproveProject} sx={{ mr: 2 }}>
-                Approve
+            <Box sx={{ mt: 2 }}>
+              <Button variant="contained" color="primary" onClick={() => handleReviewProject('accept')} sx={{ mr: 2 }}>
+                Accept
               </Button>
-              <Button variant="contained" color="secondary" onClick={handleRejectProject}>
+              <Button variant="contained" color="secondary" onClick={() => handleReviewProject('reject')}>
                 Reject
+              </Button>
+              <Button variant="contained" color="default" onClick={() => handleReviewProject('cti')} sx={{ mr: 2 }}>
+                CTI
+              </Button>
+              <Button variant="contained" color="default" onClick={() => handleReviewProject('cde')}>
+                CDE
               </Button>
             </Box>
 
@@ -188,8 +190,6 @@ const AdminDashboardPage = () => {
             </Button>
           </Box>
         </Modal>
-
-        
       </Container>
     </div>
   );
