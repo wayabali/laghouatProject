@@ -35,7 +35,7 @@
   }
   
   .project-card {
-    background-color: white;
+    background-color: rgb(245, 245, 245);
     padding: 15px;
     border-radius: 10px;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
@@ -60,7 +60,7 @@
   }
   
   .status.pending {
-    background-color: #ff9800;
+    background-color: #ffffff;
   }
   
   .status.accepted {

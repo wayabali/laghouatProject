@@ -1,25 +1,30 @@
 import React, { useState } from 'react';
-import { Button, Typography, Container, Box, Modal, MenuItem, Select, FormControl, InputLabel } from '@mui/material';
+import { Button, Typography, Container, Box, Modal, MenuItem, Select, FormControl, InputLabel, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper } from '@mui/material';
 import { useNavigate } from 'react-router-dom'; 
-import { jsPDF } from 'jspdf'; // Import jsPDF for PDF export
-import * as XLSX from 'xlsx'; // Import xlsx for Excel export
+import { jsPDF } from 'jspdf'; 
+import * as XLSX from 'xlsx'; 
+import './AdminDashboardPage.css'
+import ResponsiveAppBar from '../Components/navigationBar'; // Assuming you have a TopBar component
+import { FaRegFilePdf , FaArrowUpRightFromSquare  } from "react-icons/fa6";
+import { RiFileExcel2Line } from "react-icons/ri";
+
+
 
 const AdminDashboardPage = () => {
   const navigate = useNavigate();
   const [openModal, setOpenModal] = useState(false);
   const [selectedProject, setSelectedProject] = useState(null);
   const [projects, setProjects] = useState([
-    { id: 1, name: "Cosmetics Idea", status: "Pending", description: "Project related to Cosmetics", team: ["John Doe", "Jane Doe"], documents: null, department: "CDE" },
-    { id: 2, name: "E-Learning Plateform", status: "Pending", description: "Mixing Learning with Internet", team: ["Alice", "Bob"], documents: "link_to_document", department: "BI" },
+    { id: 1, name: "Cosmetics Idea", status: "Pending", description: "Project related to Cosmetics", team: ["John Doe", "Jane Doe"], documents: null, department: "CDE", dateSubmitted: "2025-04-10" },
+    { id: 2, name: "E-Learning Plateform", status: "Pending", description: "Mixing Learning with Internet", team: ["Alice", "Bob"], documents: "link_to_document", department: "BI", dateSubmitted: "2025-04-12" },
+    { id: 3, name: "Tech Startup", status: "Approved", description: "A new tech startup project", team: ["Emma", "Zoe"], documents: null, department: "CDE", dateSubmitted: "2025-04-14" },
   ]);
 
   const [selectedDepartment, setSelectedDepartment] = useState('');
-  const [status, setStatus] = useState('');
 
   const handleOpenModal = (project) => {
     setSelectedProject(project);
     setOpenModal(true);
-    setStatus(project.status === 'Pending' ? 'Pending' : project.status); // Ensure status is 'Pending' when no changes are made
   };
 
   const handleCloseModal = () => {
@@ -28,15 +33,6 @@ const AdminDashboardPage = () => {
 
   const handleDepartmentChange = (event) => {
     setSelectedDepartment(event.target.value);
-  };
-
-  const handleStatusChange = (newStatus) => {
-    if (selectedProject) {
-      const updatedProjects = projects.map((project) =>
-        project.id === selectedProject.id ? { ...project, status: newStatus } : project
-      );
-      setProjects(updatedProjects);
-    }
   };
 
   const handleApproveProject = () => {
@@ -52,27 +48,8 @@ const AdminDashboardPage = () => {
     }
   };
 
-  const handleSubmitProject = () => {
-    if (selectedDepartment) {
-      const updatedProjects = projects.map((project) =>
-        project.id === selectedProject.id ? { ...project, status: `Submitted and sent to ${selectedDepartment}`, department: selectedDepartment } : project
-      );
-      setProjects(updatedProjects);
-      alert(`Project submitted and sent to ${selectedDepartment} department.`);
-      handleCloseModal();
-    } else {
-      alert("Please select a department.");
-    }
-  };
-
-  const handleRejectProject = () => {
-    handleStatusChange('Rejected');
-    handleCloseModal();
-  };
-
   const handleExportPDF = () => {
     const doc = new jsPDF();
-
     let y = 20;
     doc.setFont("helvetica", "normal");
     doc.setFontSize(12);
@@ -99,62 +76,77 @@ const AdminDashboardPage = () => {
     XLSX.writeFile(wb, "projects-list.xlsx");
   };
 
-  const handleSubmitAllProjects = () => {
-    const allProjectsApprovedOrRejected = projects.every(project => (project.status.toLowerCase().includes('approved'))
-      || project.status === 'Rejected');
-    
-    if (allProjectsApprovedOrRejected) {
-      const updatedProjects = projects.map(project => ({ ...project, status: `Submitted and sent to ${selectedDepartment}` }));
+  
+
+  const handleRejectProject = () => {
+    if (selectedProject) {
+      const updatedProjects = projects.map((project) =>
+        project.id === selectedProject.id ? { ...project, status: "Rejected" } : project
+      );
       setProjects(updatedProjects);
-      alert("All projects have been submitted.");
+      alert(`Project "${selectedProject.name}" has been rejected.`);
+      handleCloseModal();
     } else {
-      alert("Please approve or reject all projects before submitting.");
+      alert("No project selected to reject.");
     }
   };
 
+  // Function to get status color based on project status
   const getStatusColor = (status) => {
-    if (status === 'Rejected') return 'red';
     if (status === 'Approved') return 'green';
-    if (status.toLowerCase().includes('submitted')) return 'white';
-    return 'orange'; 
+    if (status === 'Rejected') return 'red';
+    if (status === 'Pending') return 'orange';
+    return 'black'; // Default color if no status matches
   };
 
   return (
-    <div>
+
+<div>
+  <ResponsiveAppBar  /> {/* Assuming you have a TopBar component */}
       <Container maxWidth="lg" sx={{ mt: 4 }}>
         <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 4 }}>
           Admin Dashboard
         </Typography>
 
-        {projects.map((project) => (
-          <div className="project-card" key={project.id} style={{ padding: '20px', marginBottom: '10px', border: '1px solid #ccc', borderRadius: '8px' }}>
-            <div className="project-card-header" style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <h3>{project.name}</h3>
-              <span className={`status ${project.status.toLowerCase()}`} style={{ fontWeight: 'bold', color: getStatusColor(project.status) }}>
-                {project.status}
-              </span>
-            </div>
-            <p>{project.description}</p>
-            <div className="project-actions">
-              <Button onClick={() => handleOpenModal(project)} variant="outlined" color="primary">
-                View Details
-              </Button>
-            </div>
-          </div>
-        ))}
+        {/* Table to display projects */}
+        <TableContainer component={Paper} sx={{ mb: 3 }}>
+          <Table>
+            <TableHead >
+              <TableRow >
+                <TableCell style={{fontWeight: 'bold'}} >ID</TableCell>
+                <TableCell style={{fontWeight: 'bold'}}>Name</TableCell>
+                <TableCell style={{fontWeight: 'bold'}}>Status</TableCell>
+                <TableCell style={{fontWeight: 'bold'}}>Date of Submission</TableCell>
+                <TableCell style={{fontWeight: 'bold'}}>Actions</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {projects.map((project) => (
+                <TableRow key={project.id}>
+                  <TableCell>{project.id}</TableCell>
+                  <TableCell>{project.name}</TableCell>
+                  {/* Displaying status with color based on status */}
+                  <TableCell style={{ color: getStatusColor(project.status), fontWeight: 'bold' }}>
+                    {project.status}
+                  </TableCell>
+                  <TableCell>{project.dateSubmitted}</TableCell>
+                  <TableCell>
+                    <Button onClick={() => handleOpenModal(project)} variant="outlined" color="black">
+                    <FaArrowUpRightFromSquare style={{ fontSize: '1rem' }} />
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
 
-        <Box sx={{ mt: 3, display: 'flex', justifyContent: 'space-between' }}>
-          <Button variant="contained" color="primary" onClick={handleExportPDF}>
-            Export as PDF
+        <Box sx={{ mt: 3, display: 'flex', justifyContent: 'right' , gap: 2 }}>
+          <Button sx={{ backgroundColor: 'red', color: 'white' }} variant="contained" onClick={handleExportPDF}>
+          <FaRegFilePdf style={{ fontSize: '1.2rem' }} />
           </Button>
-          <Button variant="contained" color="secondary" onClick={handleExportExcel}>
-            Export as Excel
-          </Button>
-        </Box>
-
-        <Box sx={{ mt: 3 }}>
-          <Button variant="contained" color="success" onClick={handleSubmitAllProjects}>
-            Submit All Projects
+          <Button sx={{ backgroundColor: 'green', color: 'white', width: 'auto' }} variant="contained" onClick={handleExportExcel}>
+          <RiFileExcel2Line style={{ fontSize: '1.2rem' }} />
           </Button>
         </Box>
 
@@ -196,6 +188,8 @@ const AdminDashboardPage = () => {
             </Button>
           </Box>
         </Modal>
+
+        
       </Container>
     </div>
   );

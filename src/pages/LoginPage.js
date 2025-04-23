@@ -1,48 +1,60 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom"; // For navigation after login
-import "./LoginPage.css"; // Import CSS for styling
+import { useNavigate } from "react-router-dom"; 
+import "./LoginPage.css"; //
 
 const LoginPage = () => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [isAgent, setIsAgent] = useState(false); // State to toggle between agent and project login
-  const navigate = useNavigate(); // Navigation hook for redirecting after login
+  const navigate = useNavigate();
 
-  const handleLogin = () => {
-    // Project login logic
-    if (!isAgent) {
-      if (username === "project123" && password === "projectpassword") {
-        localStorage.setItem("isProject", true);
-        navigate("/project-home"); // Redirect to project dashboard
+  const handleLogin = async () => {
+    const loginData = {
+      username: username,
+      password: password,
+    };
+
+    try {
+      const response = await fetch("https://project-management-app-bvjs.onrender.com/accounts/token/", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(loginData),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        localStorage.setItem("accessToken", data.access);
+        localStorage.setItem("refreshToken", data.refresh);
+        localStorage.setItem("user", JSON.stringify(data.user));
+
+        if (data.user.user_type === "admin") {
+          navigate("/admin-dashboard");
+        } else {
+          alert("Invalid user type for this login");
+        }
       } else {
-        alert("Invalid project credentials");
+        const errorData = await response.json();
+        alert(errorData.detail || "Invalid credentials");
       }
-    }
-    // Agent login logic
-    else {
-      if (username === "agent" && password === "agent123") {
-        localStorage.setItem("isAgent", true);
-        navigate("/admin-dashboard"); // Redirect to agent dashboard
-      } else {
-        alert("Invalid agent credentials");
-      }
+    } catch (error) {
+      console.error("Error during login:", error);
+      alert("An error occurred. Please try again later.");
     }
   };
 
   return (
     <div className="login-container">
       <div className="login-box">
-        <h2>{isAgent ? "Agent Login" : "Project Login"}</h2>
+        <h2>Agent Login</h2>
         <form onSubmit={(e) => e.preventDefault()}>
           <div className="input-group">
-            <label htmlFor="username">
-              {isAgent ? "Email" : "Project Name"}
-            </label>
+            <label htmlFor="username">Email</label>
             <input
               type="text"
               id="username"
               name="username"
-              placeholder={isAgent ? "Enter Email " : "Enter Project Name"}
+              placeholder="Enter Email"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               required
@@ -69,29 +81,7 @@ const LoginPage = () => {
           </button>
         </form>
 
-        {/* Toggle between project login and agent login */}
-        <div className="toggle-login">
-          <button
-            className={`toggle-btn ${isAgent ? "" : "active"}`}
-            onClick={() => setIsAgent(false)}
-          >
-            Project Login
-          </button>
-          <button
-            className={`toggle-btn ${isAgent ? "active" : ""}`}
-            onClick={() => setIsAgent(true)}
-          >
-            Agent Login
-          </button>
-        </div>
-
         <div className="links">
-          {!isAgent ? (
-            <span>
-              Your <span>Don't Have a Project?</span>
-              <a href="/create-project">Create One</a>
-            </span>
-          ) : null}
           <a href="/forgot-password">Forgot your password?</a>
         </div>
       </div>
