@@ -48,7 +48,7 @@ const AdminDashboardPage = () => {
     if (selectedProject) {
       try {
         const response = await fetch(`https://project-management-app-bvjs.onrender.com/accounts/admin/projects/${selectedProject.id}/review_project/`, {
-          method: 'POST',
+          method: 'GET',
           headers: {
             'Content-Type': 'application/json',
           },
